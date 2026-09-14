@@ -1,5 +1,9 @@
-.idea/
-.smarttomcat/
-target/
+/target/
+/.idea/
+/.smarttomcat/
+/.settings/
+/.classpath
+/.project
 *.iml
 *.class
+*.log
