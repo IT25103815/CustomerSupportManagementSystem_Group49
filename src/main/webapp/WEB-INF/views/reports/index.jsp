@@ -1,1 +1,28 @@
-<%@ page contentType="text/html;charset=UTF-8" %><%@ taglib prefix="c" uri="jakarta.tags.core" %><c:set var="pageTitle" value="Analytics & Reports"/><c:set var="pageKey" value="reports"/><%@ include file="../includes/head.jsp" %><section class="report-hero"><div><span class="eyebrow">Executive service intelligence</span><h2>Turn support activity into better decisions.</h2><p>Review live performance, filter the ticket register and export accurate operational data.</p></div><div class="report-actions"><button class="btn btn-light" type="button" onclick="window.print()">Print / Save PDF</button><a class="btn btn-light" href="${pageContext.request.contextPath}/reports?format=csv&status=${param.status}&q=${param.q}">Export CSV</a></div></section><section class="stat-grid compact-stats"><article class="stat-card blue"><span>Total</span><b>${stats.total}</b></article><article class="stat-card amber"><span>In Progress</span><b>${stats.inProgress}</b></article><article class="stat-card red"><span>Escalated</span><b>${stats.escalated}</b></article><article class="stat-card cyan"><span>Satisfaction</span><b>${stats.satisfaction}</b></article></section><section class="panel"><div class="panel-head"><div><span class="section-kicker">Ticket register</span><h3>Operational Report</h3></div><form class="search-bar"><input name="q" value="${param.q}" placeholder="Search report"><select name="status"><option value="">All statuses</option><c:forEach items="${['OPEN','ASSIGNED','IN_PROGRESS','WAITING_FOR_CUSTOMER','ESCALATED','RESOLVED','CLOSED','CANCELLED','REOPENED']}" var="s"><option value="${s}" ${param.status eq s?'selected':''}>${s.replace('_',' ')}</option></c:forEach></select><button class="btn btn-secondary">Apply</button></form></div><div class="table-wrap"><table><thead><tr><th>Number</th><th>Customer</th><th>Category</th><th>Subject</th><th>Priority</th><th>Status</th><th>Created</th></tr></thead><tbody><c:forEach items="${reportTickets}" var="ticket"><tr><td><c:out value="${ticket.number}"/></td><td><c:out value="${ticket.customerName}"/></td><td><c:out value="${ticket.categoryName}"/></td><td><c:out value="${ticket.subject}"/></td><td>${ticket.priority}</td><td>${ticket.status.replace('_',' ')}</td><td><small>${ticket.createdAt}</small></td></tr></c:forEach></tbody></table></div></section><%@ include file="../includes/foot.jsp" %>
+<%@ page contentType="text/html;charset=UTF-8" %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Helpify | Customer Support</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/app.css">
+</head>
+<body class="landing">
+<nav class="landing-nav">
+    <a class="brand" href="${pageContext.request.contextPath}/"><span class="brand-mark">H</span><span>Helpify<small>Customer Support</small></span></a>
+    <div><a class="nav-link" href="${pageContext.request.contextPath}/faqs">Knowledge Base</a><a class="btn btn-light" href="${pageContext.request.contextPath}/login">Sign In</a><a class="btn btn-primary" href="${pageContext.request.contextPath}/register">Create Account</a></div>
+</nav>
+<main class="hero simple-hero">
+    <section class="hero-copy">
+        <span class="eyebrow">Reliable customer support</span>
+        <h1>Support requests, clearly managed from start to finish.</h1>
+        <p>Helpify gives customers and support teams one place to submit requests, track progress, communicate, find answers and review service quality.</p>
+        <div class="hero-actions"><a class="btn btn-primary btn-lg" href="${pageContext.request.contextPath}/register">Create Customer Account</a><a class="btn btn-light btn-lg" href="${pageContext.request.contextPath}/faqs">Browse FAQs</a></div>
+    </section>
+    <section class="hero-card">
+        <h2>What Helpify supports</h2>
+        <ul><li><b>Ticket Management</b><span>Create, assign, update and track support requests.</span></li><li><b>Knowledge Base</b><span>Search practical answers to common questions.</span></li><li><b>Communication</b><span>Keep ticket messages and notifications organized.</span></li><li><b>Service Insights</b><span>Use database-backed dashboards and reports.</span></li></ul>
+    </section>
+</main>
+<section class="feature-strip light-strip"><article><span class="feature-icon">01</span><h3>Organized Tickets</h3><p>Clear status, priority, assignment and activity history.</p></article><article><span class="feature-icon">02</span><h3>Self-Service Help</h3><p>Published FAQs help customers resolve common issues quickly.</p></article><article><span class="feature-icon">03</span><h3>Real Data</h3><p>Support activity is stored and retrieved through Microsoft SQL Server.</p></article></section>
+<footer class="landing-footer">Helpify &middot; Web-Based Customer Support Management System</footer>
+</body></html>
