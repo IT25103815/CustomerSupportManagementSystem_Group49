@@ -16,7 +16,7 @@ public class FaqServlet extends HttpServlet {
     private final FaqDao faqs = new FaqDao();
 
     private boolean canManage(User user) {
-        return user != null && user.hasRole("CUSTOMER_RELATIONS_OFFICER", "CUSTOMER_SUPPORT_MANAGER");
+        return com.group49.support.util.AccessPolicyFactory.forUser(user).canEditHelp();
     }
 
     @Override
@@ -37,7 +37,9 @@ public class FaqServlet extends HttpServlet {
                 req.getRequestDispatcher("/WEB-INF/views/faq/form.jsp").forward(req, res);
                 return;
             }
-            req.setAttribute("faqs", faqs.list(WebUtil.value(req.getParameter("q")), canManage(user)));
+            com.group49.support.dao.FaqVisibilityStrategy strategy = canManage(user)
+                ? new com.group49.support.dao.EditorFaqStrategy() : new com.group49.support.dao.PublishedFaqStrategy();
+            req.setAttribute("faqs", strategy.list(faqs,WebUtil.value(req.getParameter("q"))));
             req.setAttribute("canManage", canManage(user));
             req.getRequestDispatcher("/WEB-INF/views/faq/list.jsp").forward(req, res);
         } catch (Exception exception) {
@@ -58,10 +60,13 @@ public class FaqServlet extends HttpServlet {
                 int categoryId = WebUtil.parseInt(req.getParameter("categoryId"), 0);
                 String question = WebUtil.value(req.getParameter("question"));
                 String answer = WebUtil.value(req.getParameter("answer"));
-                if (categoryId <= 0 || question.length() < 8 || question.length() > 300 || answer.length() < 20) {
+                if (categoryId <= 0 || question.length() < 8 || question.length() > 300 || answer.length() < 20 || answer.length() > 10000) {
                     WebUtil.flash(req, "error", "Choose a category and enter a clear question and answer.");
-                    res.sendRedirect(req.getContextPath() + "/faqs");
-                    return;
+                    req.setAttribute("formError","Choose a category, a question of 8–300 characters and an answer of 20–10000 characters.");
+                    int editId=WebUtil.parseInt(req.getParameter("id"),0);
+                    if(editId>0) req.setAttribute("faq",faqs.find(editId).orElse(null));
+                    req.setAttribute("categories",faqs.categories());
+                    req.getRequestDispatcher("/WEB-INF/views/faq/form.jsp").forward(req,res); return;
                 }
                 int rawId = WebUtil.parseInt(req.getParameter("id"), 0);
                 Integer id = rawId == 0 ? null : rawId;
