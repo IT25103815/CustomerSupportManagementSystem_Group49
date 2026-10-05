@@ -4,25 +4,36 @@
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Helpify | Customer Support</title>
+    <link rel="icon" type="image/svg+xml" href="${pageContext.request.contextPath}/assets/images/helpify-mark.svg">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/app.css">
 </head>
 <body class="landing">
+<%@ include file="WEB-INF/views/includes/icons.jsp" %>
 <nav class="landing-nav">
-    <a class="brand" href="${pageContext.request.contextPath}/"><span class="brand-mark">H</span><span>Helpify<small>Customer Support</small></span></a>
-    <div><a class="nav-link" href="${pageContext.request.contextPath}/faqs">Knowledge Base</a><a class="btn btn-light" href="${pageContext.request.contextPath}/login">Sign In</a><a class="btn btn-primary" href="${pageContext.request.contextPath}/register">Create Account</a></div>
+    <a class="brand logo-brand" href="${pageContext.request.contextPath}/" aria-label="Helpify home"><img class="brand-logo brand-logo-public" src="${pageContext.request.contextPath}/assets/images/helpify-wordmark.svg" alt="Helpify"></a>
+    <div><a class="nav-link icon-text" href="${pageContext.request.contextPath}/faqs"><svg class="ui-icon sm"><use href="#icon-faq"/></svg>Help Center</a><a class="btn btn-light" href="${pageContext.request.contextPath}/login">Sign In</a><a class="btn btn-primary" href="${pageContext.request.contextPath}/register">Get Started</a></div>
 </nav>
 <main class="hero simple-hero">
     <section class="hero-copy">
-        <span class="eyebrow">Reliable customer support</span>
-        <h1>Support requests, clearly managed from start to finish.</h1>
-        <p>Helpify gives customers and support teams one place to submit requests, track progress, communicate, find answers and review service quality.</p>
-        <div class="hero-actions"><a class="btn btn-primary btn-lg" href="${pageContext.request.contextPath}/register">Create Customer Account</a><a class="btn btn-light btn-lg" href="${pageContext.request.contextPath}/faqs">Browse FAQs</a></div>
+        <span class="eyebrow">Customer support, organized</span>
+        <h1>Manage support requests with less clutter.</h1>
+        <p>Create tickets, follow updates, message the support team and find answers from one clear workspace.</p>
+        <div class="hero-actions"><a class="btn btn-primary btn-lg icon-text" href="${pageContext.request.contextPath}/tickets?action=new"><svg class="ui-icon sm"><use href="#icon-plus"/></svg>Create a ticket</a><a class="btn btn-light btn-lg icon-text" href="${pageContext.request.contextPath}/faqs"><svg class="ui-icon sm"><use href="#icon-search"/></svg>Browse Help Center</a></div>
     </section>
-    <section class="hero-card">
-        <h2>What Helpify supports</h2>
-        <ul><li><b>Ticket Management</b><span>Create, assign, update and track support requests.</span></li><li><b>Knowledge Base</b><span>Search practical answers to common questions.</span></li><li><b>Communication</b><span>Keep ticket messages and notifications organized.</span></li><li><b>Service Insights</b><span>Use database-backed dashboards and reports.</span></li></ul>
+    <section class="hero-card support-overview">
+        <h2>Core support tools</h2>
+        <ul>
+            <li><svg class="ui-icon feature-svg"><use href="#icon-ticket"/></svg><div><b>Tickets</b><span>Create, assign and track requests.</span></div></li>
+            <li><svg class="ui-icon feature-svg"><use href="#icon-faq"/></svg><div><b>Help Center</b><span>Find answers to common questions.</span></div></li>
+            <li><svg class="ui-icon feature-svg"><use href="#icon-message"/></svg><div><b>Communication</b><span>Keep ticket conversations together.</span></div></li>
+            <li><svg class="ui-icon feature-svg"><use href="#icon-reports"/></svg><div><b>Reports</b><span>Review real support activity.</span></div></li>
+        </ul>
     </section>
 </main>
-<section class="feature-strip light-strip"><article><span class="feature-icon">01</span><h3>Organized Tickets</h3><p>Clear status, priority, assignment and activity history.</p></article><article><span class="feature-icon">02</span><h3>Self-Service Help</h3><p>Published FAQs help customers resolve common issues quickly.</p></article><article><span class="feature-icon">03</span><h3>Real Data</h3><p>Support activity is stored and retrieved through Microsoft SQL Server.</p></article></section>
-<footer class="landing-footer">Helpify &middot; Web-Based Customer Support Management System</footer>
+<section class="feature-strip light-strip">
+    <article><span class="feature-icon"><svg class="ui-icon"><use href="#icon-ticket"/></svg></span><h3>Ticket Workflow</h3><p>Status, priority and assignment at a glance.</p></article>
+    <article><span class="feature-icon"><svg class="ui-icon"><use href="#icon-faq"/></svg></span><h3>Self-Service</h3><p>Published answers reduce repeated requests.</p></article>
+    <article><span class="feature-icon"><svg class="ui-icon"><use href="#icon-reports"/></svg></span><h3>Real Data</h3><p>Support activity stays connected to SQL Server.</p></article>
+</section>
+<footer class="landing-footer">Helpify &middot; Customer Support Management</footer>
 </body></html>
