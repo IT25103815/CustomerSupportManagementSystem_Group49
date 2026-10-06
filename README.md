@@ -1,3 +1,5 @@
+> Enhanced version: start with [docs/START_HERE.md](docs/START_HERE.md). Build/tests, upload support, UI and six-member patterns are documented there.
+
 # Helpify - Web-Based Customer Support Management System
 
 Helpify is a Java 17 / JSP / Servlet web application using a DAO-based architecture and Microsoft SQL Server through JDBC.
