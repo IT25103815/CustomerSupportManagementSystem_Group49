@@ -17,7 +17,9 @@ public class SecurityFilter implements Filter {
         String path=req.getRequestURI().substring(req.getContextPath().length());
         boolean staticPath=path.startsWith("/assets/");
         boolean publicPath=path.equals("/")||path.equals("/index.jsp")||path.equals("/login")||path.equals("/register")||path.equals("/forgot-password")||path.equals("/reset-password")||(path.equals("/faqs")&&"GET".equals(req.getMethod()));
-        if("POST".equalsIgnoreCase(req.getMethod())&&!staticPath){String expected=(String)session.getAttribute("csrfToken");String supplied=req.getParameter("csrfToken");if(expected==null||!expected.equals(supplied)){res.sendError(403,"Invalid security token");return;}}
+        if("POST".equalsIgnoreCase(req.getMethod())&&!staticPath){String expected=(String)session.getAttribute("csrfToken");String supplied;
+        try { supplied=req.getParameter("csrfToken"); }
+        catch(IllegalStateException oversized){res.sendError(413,"Upload too large: maximum 10 MB per file, 3 files, 31 MB request.");return;}if(expected==null||!expected.equals(supplied)){res.sendError(403,"Invalid security token");return;}}
         User user=(User)session.getAttribute("currentUser");
         if(!staticPath&&!publicPath&&user==null){session.setAttribute("flashType","warning");session.setAttribute("flashMessage","Please sign in to continue.");res.sendRedirect(req.getContextPath()+"/login");return;}
         req.setAttribute("currentUser",user);chain.doFilter(request,response);
