@@ -24,7 +24,7 @@ public class ReportServlet extends HttpServlet {
     private final ReportDao reports = new ReportDao();
 
     private boolean allowed(User user) {
-        return user.hasRole("CUSTOMER_SUPPORT_MANAGER", "OPERATIONS_EXECUTIVE", "QUALITY_ASSURANCE_SUPERVISOR");
+        return com.group49.support.util.AccessPolicyFactory.forUser(user).canReport();
     }
 
     @Override
@@ -41,10 +41,13 @@ public class ReportServlet extends HttpServlet {
                 status = parts.length > 0 ? parts[0] : "";
                 q = parts.length > 1 ? parts[1] : "";
             }
+            if(q.length()>220 || (!status.isBlank() && !com.group49.support.util.TicketRules.STATUSES.contains(status))) { res.sendError(400,"Invalid report filters"); return; }
             var list = tickets.list(user, q, status);
-            if ("csv".equals(req.getParameter("format"))) {
-                writeCsv(res, list);
-                return;
+            String format=WebUtil.value(req.getParameter("format"));
+            if ("csv".equals(format) || "html".equals(format)) {
+                com.group49.support.util.ReportOutputStrategy strategy = "csv".equals(format)
+                    ? new com.group49.support.util.CsvReportStrategy() : new com.group49.support.util.HtmlReportStrategy();
+                strategy.write(res,list); return;
             }
             req.setAttribute("reportTickets", list);
             req.setAttribute("stats", tickets.stats(user, 0));
@@ -77,6 +80,9 @@ public class ReportServlet extends HttpServlet {
                     return;
                 }
                 if (type.isBlank()) type = "TICKET_REGISTER";
+                if(!java.util.Set.of("TICKET_REGISTER","SERVICE_REVIEW").contains(type) || q.length()>220 || (!status.isBlank() && !com.group49.support.util.TicketRules.STATUSES.contains(status))) {
+                    WebUtil.flash(req,"error","Invalid report type or filters."); res.sendRedirect(req.getContextPath()+"/reports"); return;
+                }
                 String filters = status.replace("|", "") + "|" + q.replace("|", "");
                 if ("update".equals(action)) {
                     reports.update(WebUtil.parseInt(req.getParameter("id"), 0), name, type, filters);
@@ -92,19 +98,4 @@ public class ReportServlet extends HttpServlet {
         }
     }
 
-    private void writeCsv(HttpServletResponse res, java.util.List<Ticket> list) throws IOException {
-        res.setContentType("text/csv;charset=UTF-8");
-        res.setHeader("Content-Disposition", "attachment; filename=helpify-ticket-report-" + LocalDate.now() + ".csv");
-        PrintWriter out = res.getWriter();
-        out.println("Ticket Number,Customer,Category,Subject,Priority,Status,Assigned To,Created");
-        for (Ticket ticket : list) {
-            out.printf("\"%s\",\"%s\",\"%s\",\"%s\",%s,%s,\"%s\",%s%n",
-                    clean(ticket.number()), clean(ticket.customerName()), clean(ticket.categoryName()),
-                    clean(ticket.subject()), ticket.priority(), ticket.status(), clean(ticket.assigneeName()), ticket.createdAt());
-        }
-    }
-
-    private String clean(String value) {
-        return value == null ? "" : value.replace("\"", "\"\"").replace("\r", " ").replace("\n", " ");
-    }
 }
