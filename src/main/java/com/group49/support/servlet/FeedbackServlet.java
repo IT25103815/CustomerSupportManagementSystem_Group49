@@ -38,51 +38,18 @@ public class FeedbackServlet extends HttpServlet {
         User user = WebUtil.currentUser(req);
         String action = WebUtil.value(req.getParameter("action"));
         try {
-            if (user.isCustomer()) handleCustomer(req, user, action);
-            else if (canManage(user)) handleStaff(req, action);
+            com.group49.support.dao.FeedbackWorkflowStrategy strategy;
+            if(user.isCustomer()) strategy=new com.group49.support.dao.CustomerFeedbackStrategy();
+            else if(canManage(user)) strategy=new com.group49.support.dao.StaffFeedbackStrategy();
             else { res.sendError(403); return; }
+            strategy.execute(req,user,action);
         } catch (Exception exception) {
             WebUtil.flash(req, "error", "Feedback could not be saved. Check the ticket status and entered values.");
+        }
+        if("error".equals(req.getSession().getAttribute("flashType")) || "warning".equals(req.getSession().getAttribute("flashType"))) {
+            req.setAttribute("feedbackFormError",true); doGet(req,res); return;
         }
         res.sendRedirect(req.getContextPath() + "/feedback");
     }
 
-    private void handleCustomer(HttpServletRequest req, User user, String action) throws Exception {
-        int rating = WebUtil.parseInt(req.getParameter("rating"), 0);
-        String comments = WebUtil.value(req.getParameter("comments"));
-        if ("delete".equals(action)) {
-            if (feedback.deleteByCustomer(WebUtil.parseInt(req.getParameter("id"), 0), user.id()))
-                WebUtil.flash(req, "success", "Feedback deleted.");
-            else WebUtil.flash(req, "warning", "Only new feedback can be deleted.");
-            return;
-        }
-        if (rating < 1 || rating > 5 || comments.length() > 1000) {
-            WebUtil.flash(req, "error", "Choose a rating from 1 to 5 and keep comments under 1000 characters.");
-            return;
-        }
-        if ("update".equals(action)) {
-            if (feedback.updateByCustomer(WebUtil.parseInt(req.getParameter("id"), 0), user.id(), rating, comments))
-                WebUtil.flash(req, "success", "Feedback updated.");
-            else WebUtil.flash(req, "warning", "Only new feedback can be edited.");
-        } else {
-            feedback.submit(WebUtil.parseInt(req.getParameter("ticketId"), 0), user.id(), rating, comments);
-            WebUtil.flash(req, "success", "Thank you for your feedback.");
-        }
-    }
-
-    private void handleStaff(HttpServletRequest req, String action) throws Exception {
-        int id = WebUtil.parseInt(req.getParameter("id"), 0);
-        if ("remove".equals(action)) {
-            feedback.removeByStaff(id);
-            WebUtil.flash(req, "success", "Feedback removed from active review.");
-            return;
-        }
-        String response = WebUtil.value(req.getParameter("response"));
-        if (response.length() < 3 || response.length() > 1000) {
-            WebUtil.flash(req, "error", "Enter a response between 3 and 1000 characters.");
-            return;
-        }
-        feedback.respond(id, response, "RESPONDED");
-        WebUtil.flash(req, "success", "Feedback response saved.");
-    }
 }
