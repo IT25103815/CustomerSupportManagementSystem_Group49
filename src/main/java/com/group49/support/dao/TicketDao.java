@@ -51,6 +51,12 @@ public class TicketDao {
     }
 
     public int create(int customerId, int categoryId, String subject, String description, String priority) throws SQLException {
+        return create(customerId, categoryId, subject, description, priority, java.util.List.of(), java.util.List.of());
+    }
+
+    public int create(int customerId, int categoryId, String subject, String description, String priority,
+                      java.util.List<com.group49.support.util.AttachmentValidator.Upload> uploads,
+                      java.util.List<String> storedNames) throws SQLException {
         try (Connection connection = Database.getConnection()) {
             connection.setAutoCommit(false);
             try {
@@ -81,9 +87,18 @@ public class TicketDao {
                     statement.setInt(2, customerId);
                     statement.executeUpdate();
                 }
+                for (int i=0;i<uploads.size();i++) {
+                    var upload = uploads.get(i);
+                    try (PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO ticket_attachments(ticket_id,original_name,stored_name,content_type,file_size,uploaded_by) VALUES(?,?,?,?,?,?)")) {
+                        statement.setInt(1,id); statement.setString(2,upload.name()); statement.setString(3,storedNames.get(i));
+                        statement.setString(4,upload.type()); statement.setLong(5,upload.bytes().length); statement.setInt(6,customerId);
+                        statement.executeUpdate();
+                    }
+                }
                 connection.commit();
                 return id;
-            } catch (SQLException exception) {
+            } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
             }
@@ -129,7 +144,7 @@ public class TicketDao {
                 }
                 connection.commit();
                 return changed == 1;
-            } catch (SQLException exception) {
+            } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
             }
@@ -152,13 +167,14 @@ public class TicketDao {
             try {
                 String oldStatus;
                 try (PreparedStatement statement = connection.prepareStatement(
-                        "SELECT status FROM tickets WHERE ticket_id=?")) {
+                        "SELECT status FROM tickets WITH (UPDLOCK, ROWLOCK) WHERE ticket_id=?")) {
                     statement.setInt(1, id);
                     try (ResultSet result = statement.executeQuery()) {
                         if (!result.next()) throw new SQLException("Ticket not found");
                         oldStatus = result.getString(1);
                     }
                 }
+                if (!com.group49.support.util.TicketRules.canTransition(oldStatus,status)) throw new IllegalArgumentException("This ticket status transition is not allowed.");
                 String sql = "UPDATE tickets SET status=?,priority=?,assigned_to=?,updated_at=SYSDATETIME()," +
                         "resolved_at=CASE WHEN ?='RESOLVED' THEN COALESCE(resolved_at,SYSDATETIME()) ELSE resolved_at END," +
                         "closed_at=CASE WHEN ?='CLOSED' THEN COALESCE(closed_at,SYSDATETIME()) ELSE closed_at END WHERE ticket_id=?";
@@ -183,7 +199,7 @@ public class TicketDao {
                     }
                 }
                 connection.commit();
-            } catch (SQLException exception) {
+            } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
             }
@@ -260,6 +276,62 @@ public class TicketDao {
                     statuses.getOrDefault("RESOLVED", 0L), statuses.getOrDefault("CLOSED", 0L), unread,
                     satisfaction, statuses, priorities);
         }
+    }
+
+
+    public int createAttachment(int ticketId, String originalName, String storedName,
+                                String contentType, long fileSize, int uploadedBy) throws SQLException {
+        String sql = "INSERT INTO ticket_attachments(ticket_id,message_id,original_name,stored_name,content_type,file_size,uploaded_by) " +
+                "OUTPUT INSERTED.attachment_id VALUES(?,NULL,?,?,?,?,?)";
+        try (Connection connection = Database.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, ticketId);
+            statement.setString(2, originalName);
+            statement.setString(3, storedName);
+            statement.setString(4, contentType);
+            statement.setLong(5, fileSize);
+            statement.setInt(6, uploadedBy);
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next()) throw new SQLException("Attachment id was not returned");
+                return result.getInt(1);
+            }
+        }
+    }
+
+    public List<TicketAttachment> attachments(int ticketId) throws SQLException {
+        List<TicketAttachment> items = new ArrayList<>();
+        String sql = "SELECT a.*,u.full_name uploader_name FROM ticket_attachments a " +
+                "JOIN users u ON u.user_id=a.uploaded_by WHERE a.ticket_id=? ORDER BY a.uploaded_at DESC";
+        try (Connection connection = Database.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, ticketId);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) items.add(mapAttachment(result));
+            }
+        }
+        return items;
+    }
+
+    public Optional<TicketAttachment> findAttachment(int attachmentId, User user) throws SQLException {
+        String sql = "SELECT a.*,u.full_name uploader_name FROM ticket_attachments a " +
+                "JOIN users u ON u.user_id=a.uploaded_by JOIN tickets t ON t.ticket_id=a.ticket_id " +
+                "WHERE a.attachment_id=?" + (user.isCustomer() ? " AND t.customer_id=?" : "");
+        try (Connection connection = Database.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, attachmentId);
+            if (user.isCustomer()) statement.setInt(2, user.id());
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? Optional.of(mapAttachment(result)) : Optional.empty();
+            }
+        }
+    }
+
+    private TicketAttachment mapAttachment(ResultSet result) throws SQLException {
+        return new TicketAttachment(result.getInt("attachment_id"), result.getInt("ticket_id"),
+                result.getString("original_name"), result.getString("stored_name"),
+                result.getString("content_type"), result.getLong("file_size"),
+                result.getInt("uploaded_by"), result.getString("uploader_name"),
+                result.getTimestamp("uploaded_at").toLocalDateTime());
     }
 
     public List<Map<String, Object>> categories() throws SQLException {
