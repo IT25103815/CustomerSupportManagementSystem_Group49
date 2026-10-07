@@ -167,14 +167,14 @@
             </section>
         </c:if>
 
-        <c:if test="${currentUser.role eq 'CUSTOMER_SUPPORT_MANAGER' and ticket.status eq 'CANCELLED'}">
+        <c:if test="${currentUser.role eq 'CUSTOMER_SUPPORT_MANAGER'}">
             <section class="panel danger-panel">
-                <div class="panel-head"><div><h3>Delete Cancelled Ticket</h3><p>Allowed only when no feedback record depends on this ticket.</p></div></div>
-                <form method="post" action="${pageContext.request.contextPath}/tickets" class="form-stack compact" data-confirm="Permanently delete this cancelled ticket?">
+                <div class="panel-head"><div><h3>Delete Ticket</h3><p>Permanently removes this ticket and its related ticket data.</p></div></div>
+                <form method="post" action="${pageContext.request.contextPath}/tickets" class="form-stack compact" data-confirm="Permanently delete this ticket and all related ticket data? This action cannot be undone.">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="id" value="<c:out value='${ticket.id}'/>">
-                    <button class="btn btn-danger btn-block icon-text"><svg class="ui-icon sm"><use href="#icon-trash"/></svg>Delete</button>
+                    <button class="btn btn-danger btn-block icon-text"><svg class="ui-icon sm"><use href="#icon-trash"/></svg>Delete Ticket</button>
                 </form>
             </section>
         </c:if>

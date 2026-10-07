@@ -122,6 +122,20 @@ public class TicketServlet extends HttpServlet {
                 return;
             }
             int id = WebUtil.parseInt(req.getParameter("id"), 0);
+            if ("delete".equals(action)) {
+                if (!user.hasRole("CUSTOMER_SUPPORT_MANAGER")) {
+                    res.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    return;
+                }
+                if (!tickets.deleteTicket(id)) {
+                    res.sendError(HttpServletResponse.SC_NOT_FOUND);
+                    return;
+                }
+                WebUtil.flash(req, "success", "Ticket permanently deleted.");
+                res.sendRedirect(req.getContextPath() + "/tickets");
+                return;
+            }
+
             Ticket ticket = tickets.find(id, user).orElse(null);
             if (ticket == null) { res.sendError(404); return; }
 
@@ -132,13 +146,6 @@ public class TicketServlet extends HttpServlet {
             } else if ("cancel".equals(action) && user.isCustomer()) {
                 if (tickets.cancelByCustomer(id, user.id())) WebUtil.flash(req, "success", "Ticket cancelled.");
                 else WebUtil.flash(req, "warning", "This ticket can no longer be cancelled because processing has started.");
-            } else if ("delete".equals(action) && user.hasRole("CUSTOMER_SUPPORT_MANAGER")) {
-                if (tickets.deleteCancelled(id)) {
-                    WebUtil.flash(req, "success", "Cancelled ticket record deleted.");
-                    res.sendRedirect(req.getContextPath() + "/tickets");
-                    return;
-                }
-                WebUtil.flash(req, "warning", "Only cancelled tickets without feedback can be permanently deleted.");
             } else if ("message".equals(action) && canMessage(user)) {
                 addMessage(req, ticket, user);
             } else if ("update".equals(action) && canManageTickets(user)) {

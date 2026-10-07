@@ -151,13 +151,65 @@ public class TicketDao {
         }
     }
 
-    public boolean deleteCancelled(int id) throws SQLException {
-        String sql = "DELETE FROM tickets WHERE ticket_id=? AND status='CANCELLED' " +
-                "AND NOT EXISTS(SELECT 1 FROM feedback WHERE feedback.ticket_id=tickets.ticket_id)";
-        try (Connection connection = Database.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, id);
-            return statement.executeUpdate() == 1;
+    public boolean deleteTicket(int ticketId) throws SQLException {
+        try (Connection connection = Database.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "SELECT ticket_id FROM tickets WITH (UPDLOCK, HOLDLOCK) WHERE ticket_id=?")) {
+                    statement.setInt(1, ticketId);
+                    try (ResultSet result = statement.executeQuery()) {
+                        if (!result.next()) {
+                            connection.rollback();
+                            return false;
+                        }
+                    }
+                }
+
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM ticket_attachments WHERE ticket_id=?")) {
+                    statement.setInt(1, ticketId);
+                    statement.executeUpdate();
+                }
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM ticket_messages WHERE ticket_id=?")) {
+                    statement.setInt(1, ticketId);
+                    statement.executeUpdate();
+                }
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM ticket_status_history WHERE ticket_id=?")) {
+                    statement.setInt(1, ticketId);
+                    statement.executeUpdate();
+                }
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM feedback WHERE ticket_id=?")) {
+                    statement.setInt(1, ticketId);
+                    statement.executeUpdate();
+                }
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM notifications WHERE link=?")) {
+                    statement.setString(1, "/tickets?action=view&id=" + ticketId);
+                    statement.executeUpdate();
+                }
+
+                int deleted;
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM tickets WHERE ticket_id=?")) {
+                    statement.setInt(1, ticketId);
+                    deleted = statement.executeUpdate();
+                }
+
+                if (deleted != 1) {
+                    connection.rollback();
+                    return false;
+                }
+
+                connection.commit();
+                return true;
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
         }
     }
 
